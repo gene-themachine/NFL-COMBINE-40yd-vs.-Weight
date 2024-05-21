@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Squada+One&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <title>Weight vs 40-Yard Speed</title>
+
+
+    <style>
+        html, body {
+            width: 120%;
+            height: 110%;
+            margin: 0;
+            padding: 0;
+            overflow: auto;
+        }
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        
+        svg {
+            outline: thin dashed red;
+            background-color: whitesmoke;
+        }
+        
+        .tick text {
+            font-size: 20px;
+            font-family: "Lato", sans-serif;
+        }
+        
+        text {
+            font-family: "Squada One", sans-serif;
+            font-size: 29px;
+        }
+        .tooltip {
+          font-size: 25px;
+        }
+        
+        .legend text {
+            font-family: "Lato", sans-serif;
+            font-size: 15px;
+        }
+        
+        .legend rect {
+            stroke-width: 2;
+            stroke: black;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+  
+    <script>
+        // Path to the CSV file
+        const combine_data = "./combine_data.csv";
+        
+  
+        // WINDOW HEIGHT AND WINDOW WIDTH
+        const width = window.innerWidth ;
+        const height = window.innerHeight ;
+  
+        const svg = d3.select('body')
+          .append('svg')
+          .attr('width', width + 800)
+          .attr('height', height + 500);
+
+        // TO MAKE VALUES NUMERIC
+        const parseRow = (d) => {
+          d.X40yd = +d.X40yd;
+          d.Wt = +d.Wt; 
+          return d;
+
+        };
+
+        const main = async () => {
+          const data = await d3.csv(combine_data, parseRow);
+          console.log(data);
+  
+          const xValue = (d) => d.Wt;
+          const yValue = (d) => d.X40yd;
+          const positionValue = (d) => d.Pos;
+
+
+          //FOR THE CHART
+          const margin = {
+            top: 75,
+            right: 150,
+            bottom: 75,
+            left: 75,
+          };
+
+          const x = d3.scaleLinear()
+            .domain(d3.extent(data, xValue))
+            .range([margin.left, width - margin.right]);
+  
+          const y = d3.scaleLinear()
+            .domain(d3.extent(data, yValue))
+            .range([height - margin.bottom, margin.top]);
+
+
+
+          const positions = Array.from(new Set(data.map(positionValue)));
+
+
+          const customColors = [
+            "#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff",
+            "#ffa500", "#800080", "#008000", "#000080", "#ff6347", "#4682b4",
+            "#daa520", "#5f9ea0", "#d2691e", "#9acd32", "#8a2be2", "#a52a2a",
+            "#deb887", "#5f5f5f", "#ff4500", "#2e8b57", "#1e90ff", "#ff1493"
+          ];
+
+          const color = d3.scaleOrdinal()
+            .domain(positions)
+            .range(customColors); 
+  
+          let points = data.map((d) => ({
+            x: x(xValue(d)),
+            y: y(yValue(d)),
+            position: positionValue(d),
+
+            forty: d.X40yd,
+            school: d.School,
+            height: d.Ht,
+            weight: d.Wt,
+            name: d.Player,
+            draft_info: d.draft_info,
+            year: d.year
+
+
+            
+
+          }));
+
+          const highlight = function(event, d) {
+
+            
+            d3.select(this).style("opacity", 0.5);
+
+
+
+            svg.append('rect')
+              .attr('class', 'tooltip')
+              .attr("x", d.x + 15)
+              .attr("y", d.y- 40)
+              .attr("width" , 600)
+              .attr("height", 230)
+              .attr("fill", "whitesmoke")
+              .attr('stroke', "black")
+
+    
+            svg.append('text')
+            .attr('class', 'tooltip')
+            .attr('x', d.x + 15)
+            .attr('y', d.y - 10)
+            .text(`Player: ${d.name}`);
+
+            svg.append('text')
+            .attr('class', 'tooltip')
+            .attr('x', d.x + 15)
+            .attr('y', d.y + 20)
+            .text(`School: ${d.school}`);
+
+            svg.append('text')
+              .attr('class', 'tooltip')
+              .attr('x', d.x + 20)
+              .attr('y', d.y + 50)
+              .text(`40yd: ${d.forty}`);
+
+              svg.append('text')
+              .attr('class', 'tooltip')
+              .attr('x', d.x + 20)
+              .attr('y', d.y + 80)
+              .text(`Weight: ${d.weight}`);
+
+
+              svg.append('text')
+              .attr('class', 'tooltip')
+              .attr('x', d.x + 20)
+              .attr('y', d.y + 110)
+              .text(`Height: ${d.height}`);
+
+
+              if(d.draft_info == "") {
+                d.draft_info = "No Information";
+              }
+
+              svg.append('text')
+              .attr('class', 'tooltip')
+              .attr('x', d.x + 20)
+              .attr('y', d.y + 140)
+              .text(`Draft Info: ${d.draft_info}`);
+
+              svg.append('text')
+              .attr('class', 'tooltip')
+              .attr('x', d.x + 20)
+              .attr('y', d.y + 170)
+              .text(`Year: ${d.year}`);
+
+          };
+
+
+          const noHighlight = function(event, d) {
+            d3.select(this).style("opacity", 1);
+
+            // Remove tooltip
+            svg.selectAll('.tooltip').remove();
+          };
+
+          svg.selectAll('circle')
+            .data(points)
+            .join('circle')
+            .attr('cx', d => d.x)
+            .attr('cy', d => d.y)
+            .attr('r', 5)
+            .attr('fill', d => color(d.position))
+            .attr('stroke', 'black')
+            .on("mouseover", highlight)
+            .on("mouseleave", noHighlight);
+  
+          svg.append('g')
+            .attr('transform', `translate(${margin.left},0)`)
+            .call(d3.axisLeft(y));
+  
+          svg.append('g')
+            .attr('transform', `translate(0,${height - margin.bottom})`)
+            .call(d3.axisBottom(x));
+  
+          const text1 = "Weight vs 40-Yard Speed by Position";
+
+          //THE TITLE
+          svg.append('g')
+            .append('text')
+            .text(text1)
+            .attr("x", width / 2)
+            .attr("y", margin.top - 20)
+            .attr("text-anchor", "middle");
+  
+          // Add legend
+          const legend = svg.append('g')
+            .attr('class', 'legend')
+            .attr('transform', `translate(${width - margin.right + 20}, ${margin.top})`);
+
+          positions.forEach((pos, i) => {
+            legend.append('rect')
+              .attr('x', 0)
+              .attr('y', i * 25)
+              .attr('width', 20)
+              .attr('height', 20)
+              .attr('fill', color(pos))
+              .attr('class', 'legend-rect')
+              .on('click', () => updateChart(pos));
+  
+            legend.append('text')
+              .attr('x', 30)
+              .attr('y', i * 25 + 15)
+              .text(pos);
+          });
+
+          function updateChart(selectedPosition) {
+              const filteredData = data.filter(d => d.Pos === selectedPosition)
+                  .sort((a, b) => xValue(a) - xValue(b)); // Optional sorting by x value
+
+              const filteredPoints = filteredData.map((d) => ({
+                  x: x(xValue(d)),
+                  y: y(yValue(d)),
+                  position: positionValue(d),
+                  forty: d.X40yd,
+                  school: d.School,
+                  height: d.Ht,
+                  weight: d.Wt,
+                  name: d.Player,
+                  draft_info: d.draft_info,
+                  year: d.year
+              }));
+                svg.selectAll('circle')
+
+                    .data(filteredPoints, d => `${d.name}-${d.school}-${d.year}`) 
+                    
+                    .join(
+                        enter => enter.append('circle')
+                            .attr('cx', d => d.x)
+                            .attr('cy', d => d.y)
+                            .attr('r', 5)
+                            .attr('fill', d => color(d.position))
+                            .attr('stroke', 'black')
+                            .on("mouseover", highlight)
+                            .on("mouseleave", noHighlight),
+                        update => update,
+                        exit => exit.remove()
+                    );
+                }
+                    };
+  
+        main();
+    </script>
+</body>
+</html>
